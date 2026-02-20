@@ -10,9 +10,9 @@ class User(Base):
     username=Column(String, unique=True, nullable=False)
     name=Column(String, nullable=False)
     email=Column(String, unique=True)
-    password=Column(String)
-    game_user_bingos = relationship("GameUserBingo", back_populates="user")
+    code=Column(String, unique=True, nullable=False)
 
+    game_user_bingos = relationship("GameUserBingo", back_populates="user")
 
 class Game(Base):
     __tablename__ = "game"
@@ -54,20 +54,11 @@ class Bingo(Base):
 class GameUserBingo(Base):
     __tablename__ = "game_user_bingo"
 
-    game_id = Column(Integer, ForeignKey("game.id"), primary_key=True)
-    user_id = Column(Integer, ForeignKey("user.id"), primary_key=True)
-    bingo_id = Column(Integer, ForeignKey("bingo.id"), primary_key=True)
+    game_id = Column(ForeignKey("game.id"), primary_key=True)
+    user_id = Column(ForeignKey("user.id"), primary_key=True)
+    bingo_id = Column(ForeignKey("bingo.id"), primary_key=True)
+    points = Column(Integer, default=0)
 
     game = relationship("Game", back_populates="game_user_bingos")
     user = relationship("User", back_populates="game_user_bingos")
     bingo = relationship("Bingo", back_populates="game_user_bingos")
-
-
-class GameParticipant(Base):
-    __tablename__ = "game_participant"
-
-    game_id = Column(Integer, ForeignKey("game.id"), primary_key=True)
-    user_id = Column(Integer, ForeignKey("user.id"), primary_key=True)
-    
-    game = relationship("Game")
-    user = relationship("User")
