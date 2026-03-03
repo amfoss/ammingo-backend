@@ -4,11 +4,15 @@ from app.routes import auth
 from app.routes import game
 
 from app.db.db import engine, Base
-from app.db import models  # IMPORTANT: ensures models are imported
+from app.db import models  
 
-Base.metadata.create_all(bind=engine)
+
 
 app = FastAPI(title="amMingo")
+
+@app.on_event("startup")
+def on_startup():
+    Base.metadata.create_all(bind=engine)
 
 app.add_middleware(
     CORSMiddleware,

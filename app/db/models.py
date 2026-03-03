@@ -17,10 +17,15 @@ class User(Base):
 class Game(Base):
     __tablename__ = "game"
 
+    __table_args__ = (
+        CheckConstraint("start_time < end_time", name="check_valid_time"),
+    )
+
     id = Column(Integer, primary_key=True)
 
-    host_id = Column(ForeignKey("user.id"), nullable=False)
-    winner_id = Column(ForeignKey("user.id"), nullable=True)
+    host_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+    winner_id = Column(Integer, ForeignKey("user.id"), nullable=True)
+
 
     start_time = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     end_time = Column(DateTime, nullable=False)
@@ -49,9 +54,9 @@ class Bingo(Base):
 class GameUserBingo(Base):
     __tablename__ = "game_user_bingo"
 
-    game_id = Column(ForeignKey("game.id"), primary_key=True)
-    user_id = Column(ForeignKey("user.id"), primary_key=True)
-    bingo_id = Column(ForeignKey("bingo.id"), primary_key=True)
+    game_id = Column(Integer, ForeignKey("game.id"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("user.id"), primary_key=True)
+    bingo_id = Column(Integer, ForeignKey("bingo.id"), primary_key=True)
 
     game = relationship("Game", back_populates="game_user_bingos")
     user = relationship("User", back_populates="game_user_bingos")
@@ -61,8 +66,8 @@ class GameUserBingo(Base):
 class GameParticipant(Base):
     __tablename__ = "game_participant"
 
-    game_id = Column(ForeignKey("game.id"), primary_key=True)
-    user_id = Column(ForeignKey("user.id"), primary_key=True)
-
+    game_id = Column(Integer, ForeignKey("game.id"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("user.id"), primary_key=True)
+    
     game = relationship("Game")
     user = relationship("User")

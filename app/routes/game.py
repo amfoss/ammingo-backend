@@ -1,39 +1,21 @@
-
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from datetime import datetime
+
 import secrets
 import string
 import qrcode
 from io import BytesIO
 import base64
+import os
 
 from app.db.db import get_db
 from app.db.models import Game, GameParticipant
 from datetime import datetime, timedelta, timezone
+from app.models.game import CreateGameRequest, JoinGameRequest
 
 
 router = APIRouter()
-
-
-
-class CreateGameRequest(BaseModel):
-    host_id: int
-    description: str
-    location: str
-    duration: int
-    size: int
-
-class JoinGameRequest(BaseModel):
-    user_id: int
-
-
-
-
-
-
 
 
 def generate_game_code():
@@ -50,7 +32,8 @@ def create_unique_code(db: Session):
 
 
 def generate_qr_base64(code: str):
-    join_url = f"http://127.0.0.1:8000/api/games/join/{code}"
+    BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8000")
+    join_url = f"{BASE_URL}/api/games/join/{code}"
 
     qr = qrcode.make(join_url)
 
@@ -60,16 +43,12 @@ def generate_qr_base64(code: str):
     return base64.b64encode(buffer.getvalue()).decode()
 
 
-
-
 @router.post("/games")
 def create_game(
     data: CreateGameRequest,
     db: Session = Depends(get_db)
 ):
 
-    
-    host_id = data.host_id
 
     code = create_unique_code(db)
     qr_img = generate_qr_base64(code)
