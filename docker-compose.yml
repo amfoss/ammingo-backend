@@ -1,0 +1,30 @@
+services:
+  backend:
+    image: ammingo_backend
+    container_name: ammingo_backend
+    restart: always
+    build: 
+      context: ./
+    ports: 
+      - 8000:8000
+    env_file: 
+      - .env
+    environment:
+      DB_URL: postgresql://ammingo:ammingo1234@db:5432/ammingo
+    depends_on:
+      - db
+  db:
+    container_name: ammingo_database
+    restart: always
+    image: postgres:16
+    ports: 
+      - 5432:5432
+    environment:
+      POSTGRES_DB: ammingo
+      POSTGRES_USER: ammingo
+      POSTGRES_PASSWORD: ammingo1234
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    
+volumes:
+  postgres_data:

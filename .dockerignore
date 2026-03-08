@@ -1,0 +1,19 @@
+# python cache
+__init__.py
+__pycache__
+*.pyc
+
+# generated files
+.DS_Store
+.vscode/*
+
+# env files
+.env
+.venv
+venv
+
+# app files
+.gitignore
+LICENSE
+README.md
+sample.env
