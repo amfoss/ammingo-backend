@@ -5,14 +5,16 @@ from app.routes import game
 from app.db.db import engine, Base
 from starlette.middleware.sessions import SessionMiddleware
 import os
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="amMingo")
 
-
-@app.on_event("startup")
-def on_startup():
+@asynccontextmanager
+def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    yield
 
+
+app = FastAPI(title="amMingo", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
