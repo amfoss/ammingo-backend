@@ -37,7 +37,7 @@ class Game(Base):
     description = Column(Text, nullable=False)
     location = Column(String(255), nullable=False)
     code = Column(String(6), unique=True, nullable=False)
-    board_size = Column(Integer, nullable=False)
+    board_size = Column(Integer, nullable=True)
     qr_img = Column(Text, nullable=True)
 
     game_user_bingo = relationship("Bingo", back_populates="game")
