@@ -10,9 +10,19 @@ import base64
 import os
 
 from app.db.db import get_db
-from app.db.models import Game, GameUserBingo
+from app.db.models import Game, Bingo, User, BingoTiles
+
 from datetime import datetime, timedelta, timezone
-from app.models.game import CreateGameRequest, JoinGameRequest
+from app.models.game import (
+    CreateGameRequest,
+    JoinGameRequest,
+    StartGameRequest,
+    CreateGameResponse,
+    JoinGameResponse,
+    LobbyResponse,
+    StartGameResponse
+)
+import random
 
 router = APIRouter()
 
@@ -42,7 +52,8 @@ def generate_qr_base64(code: str):
     return base64.b64encode(buffer.getvalue()).decode()
 
 
-@router.post("/games")
+
+@router.post("/games", response_model=CreateGameResponse)
 def create_game(data: CreateGameRequest, db: Session = Depends(get_db)):
 
     code = create_unique_code(db)
@@ -56,7 +67,6 @@ def create_game(data: CreateGameRequest, db: Session = Depends(get_db)):
         location=data.location,
         start_time=start_time,
         end_time=end_time,
-        size=data.size,
         code=code,
         qr_img=qr_img,
     )
@@ -71,28 +81,137 @@ def create_game(data: CreateGameRequest, db: Session = Depends(get_db)):
         "qr_img": f"data:image/png;base64,{new_game.qr_img}",
     }
 
-
-@router.post("/games/join/{code}")
+@router.post("/games/join/{code}", response_model=JoinGameResponse)
 def join_game(code: str, data: JoinGameRequest, db: Session = Depends(get_db)):
+
     game = db.query(Game).filter(Game.code == code).first()
 
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    existing = (
-        db.query(GameUserBingo).filter_by(game_id=game.id, user_id=data.user_id).first()
-    )
+    existing = db.query(Bingo).filter_by(
+        game_id=game.id,
+        user_id=data.user_id
+    ).first()
 
     if existing:
-        return {"message": "User already joined"}
+        return {
+            "message": "User already joined",
+            "game_id": game.id,
+            "user_id": data.user_id
+        }
+    
+    if game.board_size is not None:
+        raise HTTPException(status_code=400, detail="Game already started")
 
-    participant = GameUserBingo(game_id=game.id, user_id=data.user_id)
 
-    db.add(participant)
+    board = Bingo(
+        game_id=game.id,
+        user_id=data.user_id
+    )
+
+    db.add(board)
     db.commit()
 
     return {
         "message": "Joined successfully",
         "game_id": game.id,
-        "user_id": data.user_id,
+        "user_id": data.user_id
     }
+
+
+@router.get("/games/{code}/lobby", response_model=LobbyResponse)
+def get_lobby(code: str, db: Session = Depends(get_db)):
+
+    game = db.query(Game).filter(Game.code == code).first()
+
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    players = (
+        db.query(User.name)
+        .join(Bingo, Bingo.user_id == User.id)
+        .filter(Bingo.game_id == game.id)
+        .all()
+    )
+
+    player_names = [p.name for p in players]
+
+    return {
+        "player_count": len(player_names),
+        "players": player_names,
+        "available_board_sizes": [3,4,5]
+    }
+
+
+@router.post("/games/{code}/start", response_model=StartGameResponse)
+def start_game(code: str, data: StartGameRequest, db: Session = Depends(get_db)):
+
+    game = db.query(Game).filter(Game.code == code).first()
+
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    
+    if data.user_id != game.host_id:
+        raise HTTPException(status_code=403, detail="Only host can start the game")
+    
+    if game.board_size is not None:
+        raise HTTPException(status_code=400, detail="Game already started")
+
+
+    game.board_size = data.size
+
+    participants = db.query(Bingo).filter(
+        Bingo.game_id == game.id
+    ).all()
+
+    for participant in participants:
+        create_bingo_matrix(db, game, participant.user_id)
+
+    db.commit()
+
+    return {
+        "message": "Game started",
+        "board_size": data.size
+    }
+
+
+
+
+
+def create_bingo_matrix(db: Session, game: Game, user_id: int):
+
+    board = db.query(Bingo).filter_by(
+        game_id=game.id,
+        user_id=user_id
+    ).first()
+
+    if not board:
+        raise HTTPException(status_code=404, detail="Board not found for user")
+
+    size = game.board_size
+    total_tiles = size * size
+
+    bingo_tiles = db.query(BingoTiles).all()
+
+    random.shuffle(bingo_tiles)
+
+    selected_tiles = bingo_tiles[:total_tiles]
+
+    for tile in selected_tiles:
+        tile.bingo_id = board.id
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+

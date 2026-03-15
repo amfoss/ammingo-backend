@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 
 
 @asynccontextmanager
-def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     yield
 
