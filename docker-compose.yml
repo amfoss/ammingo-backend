@@ -9,8 +9,6 @@ services:
       - 8000:8000
     env_file: 
       - .env
-    environment:
-      DB_URL: postgresql://ammingo:ammingo1234@db:5432/ammingo
     depends_on:
       - db
   db:
