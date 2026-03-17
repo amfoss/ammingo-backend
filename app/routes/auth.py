@@ -1,7 +1,7 @@
 from app.db.models import User
 from app.db.db import get_db
 from app.models.auth import UserDetails, EmailLoginRequest, EmailVerify
-from fastapi import APIRouter, HTTPException, Depends, Request, Response, responses
+from fastapi import FastAPI, HTTPException, Depends, Request, Response, responses
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from email.message import EmailMessage
@@ -12,6 +12,7 @@ import dotenv
 import random
 import string
 import smtplib
+from starlette.middleware.sessions import SessionMiddleware
 from datetime import datetime, timezone, timedelta
 
 secret = os.environ.get(
@@ -28,7 +29,7 @@ google_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
 frontend_url = os.environ.get("FRONTEND_URL")
 
 dotenv.load_dotenv()
-router = APIRouter()
+auth_app = FastAPI()
 oauth = OAuth()
 oauth.register(
     name="google",
@@ -37,6 +38,9 @@ oauth.register(
     server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
     client_kwargs={"scope": "openid email profile"},
 )
+auth_app.add_middleware(
+    SessionMiddleware, same_site="lax", secret_key=os.getenv("JWT_SECRET")
+)
 
 otps = {}  # For storing otp while logging in
 
@@ -44,7 +48,7 @@ otps = {}  # For storing otp while logging in
 def generate_access_token(user_id: str) -> str:
     payload = {
         "user_id": user_id,
-        "exp": datetime.now(timezone.utc) + timedelta(hours=expiry_time),
+        "exp": datetime.now(timezone.utc) + timedelta(seconds1=expiry_time),
     }
     token = jwt.encode(payload, secret, algorithm)
     return token
@@ -68,7 +72,7 @@ def send_mail(to_email, otp):
         return 0
 
 
-@router.post("/login/email")
+@auth_app.post("/login/email")
 def login_email(payload: EmailLoginRequest, db: Session = Depends(get_db)):
     email = payload.email
     query = select(User).where(User.email == email)
@@ -89,7 +93,7 @@ def login_email(payload: EmailLoginRequest, db: Session = Depends(get_db)):
     return {"Sucess": "Sent the verification mail"}
 
 
-@router.post("/login/verify-otp", response_model=UserDetails)
+@auth_app.post("/login/verify-otp", response_model=UserDetails)
 def verify_otp(
     payload: EmailVerify, response: Response, db: Session = Depends(get_db)
 ) -> UserDetails:
@@ -110,15 +114,15 @@ def verify_otp(
     return user
 
 
-@router.get("/login/oauth")
+@auth_app.get("/login/oauth")
 async def redirect_to_google(request: Request):
     redirect = request.url_for("oauth_callback")
     return await oauth.google.authorize_redirect(request, redirect)
 
 
-@router.get("/login/callback", name="oauth_callback")
+@auth_app.get("/login/callback", name="oauth_callback")
 async def callback(
-    request: Request, response: Response, db: Session = Depends(get_db)
+    request: Request, db: Session = Depends(get_db)
 ) -> UserDetails:
     token = await oauth.google.authorize_access_token(request)
     userinfo = token["userinfo"]
