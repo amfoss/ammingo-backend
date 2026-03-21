@@ -1,11 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import auth
+from app.routes.auth import auth_app
 from app.routes import game
+from app.routes import profile  
 from app.db.db import engine, Base
-from app.middlewares.verify_token import verify_token
-from starlette.middleware.sessions import SessionMiddleware
-import os
+from app.middlewares.verify_token import VerifyToken
 from contextlib import asynccontextmanager
 
 
@@ -17,11 +16,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="amMingo", lifespan=lifespan)
 
-auth.router.add_middleware(
-    SessionMiddleware, same_site="lax", secret_key=os.getenv("JWT_SECRET")
-)
-
-app.add_middleware(verify_token)
+app.add_middleware(VerifyToken)
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,8 +26,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router, prefix="/api", tags=["auth"])
+app.mount("/api/", auth_app)
 app.include_router(game.router, prefix="/api", tags=["games"])
+app.include_router(profile.router, prefix="/api", tags=["profile"])  
 
 
 @app.get("/")

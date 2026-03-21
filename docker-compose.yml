@@ -11,6 +11,8 @@ services:
       - .env
     depends_on:
       - db
+    volumes:
+      - images_data:/app/uploads
   db:
     container_name: ammingo_database
     restart: always
@@ -26,3 +28,4 @@ services:
     
 volumes:
   postgres_data:
+  images_data:

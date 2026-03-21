@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 import secrets
 import string
@@ -173,11 +172,28 @@ def create_bingo_matrix(db: Session, game: Game, user_id: int):
     size = game.board_size
     total_tiles = size * size
 
-    bingo_tiles = db.query(BingoTiles).all()
+    other_players = (
+        db.query(User)
+        .join(Bingo, Bingo.user_id == User.id)
+        .filter(Bingo.game_id == game.id)
+        .filter(User.id != user_id)
+        .all()
+    )
 
-    random.shuffle(bingo_tiles)
+    if len(other_players) < total_tiles:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Not enough players to fill a {size}x{size} board"
+        )
 
-    selected_tiles = bingo_tiles[:total_tiles]
+    random.shuffle(other_players)
+    selected_players = other_players[:total_tiles]
 
-    for tile in selected_tiles:
-        tile.bingo_id = board.id
+    for i, player in enumerate(selected_players):
+        new_tile = BingoTiles(
+            row=i // size,
+            col=i % size,
+            bingo_char=player.name.strip()[0].upper(),
+            bingo_id=board.id
+        )
+        db.add(new_tile)
