@@ -81,7 +81,14 @@ def login_email(payload: EmailLoginRequest, db: Session = Depends(get_db)):
         index = email.find("@")
         username = email[:index]
         code = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
-        user = User(username=username, name=username, email=email, code=code)
+
+        user = User( 
+            username=username,
+            name=username,
+            email=email,
+            code=code, 
+        )
+        
         db.add(user)
         db.commit()
         db.refresh(user)
@@ -135,6 +142,7 @@ async def callback(
             name=userinfo["name"],
             email=userinfo["email"],
             code=code,
+            profile_image=userinfo.get("picture")
         )
         db.add(user)
         db.commit()

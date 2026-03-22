@@ -19,6 +19,7 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
     code = Column(String, unique=True, nullable=False)
+    profile_image = Column(String, nullable=True, default="uploads/default.png")
 
     game_user_bingo = relationship("Bingo", back_populates="user")
 
