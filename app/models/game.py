@@ -52,3 +52,16 @@ class GameDetailResponse(BaseModel):
     code: str
     board_size: int | None
     qr_img: str | None
+
+class TileResponse(BaseModel):
+    id: int
+    row: int
+    col: int
+    bingo_char: str
+
+class BingoBoardResponse(BaseModel):
+    bingo_id: int
+    user_id: int
+    game_id: int
+    points: int
+    tiles: list[TileResponse]

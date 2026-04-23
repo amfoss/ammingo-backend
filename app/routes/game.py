@@ -21,6 +21,8 @@ from app.models.game import (
     LobbyResponse,
     StartGameResponse,
     GameDetailResponse,
+    BingoBoardResponse,  
+    TileResponse,
 )
 import random
 
@@ -219,4 +221,40 @@ def get_game_details(code: str, db: Session = Depends(get_db)):
         qr_img=f"data:image/png;base64,{game.qr_img}" if game.qr_img else None
     )
 
+
+@router.get("/games/{code}/board/{user_id}", response_model=BingoBoardResponse)
+def get_user_board(code: str, user_id: int, db: Session = Depends(get_db)):
+    
+    
+    game = db.query(Game).filter(Game.code == code).first()
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    
+    board = db.query(Bingo).filter_by(game_id=game.id, user_id=user_id).first()
+    if not board:
+        raise HTTPException(status_code=404, detail="Board not found")
+
+    
+    tiles = (
+        db.query(BingoTiles)
+        .filter(BingoTiles.bingo_id == board.id)
+        .order_by(BingoTiles.row, BingoTiles.col)
+        .all()
+    )
+
+    return BingoBoardResponse(
+        bingo_id=board.id,
+        user_id=board.user_id,
+        game_id=board.game_id,
+        points=board.points,
+        tiles=[
+            TileResponse(
+                id=tile.id,
+                row=tile.row,
+                col=tile.col,
+                bingo_char=tile.bingo_char
+            ) for tile in tiles
+        ]
+    )
 
