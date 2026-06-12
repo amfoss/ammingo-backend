@@ -13,8 +13,3 @@ class UserProfileResponse(BaseModel):
     name: str
     email: str
     profile_image: str
-
-class UpdateUserRequest(BaseModel):
-    username: str | None = None
-    name: str | None = None
-

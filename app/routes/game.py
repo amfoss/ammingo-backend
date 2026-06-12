@@ -21,7 +21,7 @@ from app.models.game import (
     LobbyResponse,
     StartGameResponse,
     GameDetailResponse,
-    BingoBoardResponse,  
+    BingoBoardResponse,
     TileResponse,
 )
 import random
@@ -185,8 +185,7 @@ def create_bingo_matrix(db: Session, game: Game, user_id: int):
 
     if len(other_players) < total_tiles:
         raise HTTPException(
-            status_code=400,
-            detail=f"Not enough players to fill a {size}x{size} board"
+            status_code=400, detail=f"Not enough players to fill a {size}x{size} board"
         )
 
     random.shuffle(other_players)
@@ -197,7 +196,7 @@ def create_bingo_matrix(db: Session, game: Game, user_id: int):
             row=i // size,
             col=i % size,
             bingo_char=player.name.strip()[0].upper(),
-            bingo_id=board.id
+            bingo_id=board.id,
         )
         db.add(new_tile)
 
@@ -218,24 +217,21 @@ def get_game_details(code: str, db: Session = Depends(get_db)):
         end_time=game.end_time,
         code=game.code,
         board_size=game.board_size,
-        qr_img=f"data:image/png;base64,{game.qr_img}" if game.qr_img else None
+        qr_img=f"data:image/png;base64,{game.qr_img}" if game.qr_img else None,
     )
 
 
 @router.get("/games/{code}/board/{user_id}", response_model=BingoBoardResponse)
 def get_user_board(code: str, user_id: int, db: Session = Depends(get_db)):
-    
-    
+
     game = db.query(Game).filter(Game.code == code).first()
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    
     board = db.query(Bingo).filter_by(game_id=game.id, user_id=user_id).first()
     if not board:
         raise HTTPException(status_code=404, detail="Board not found")
 
-    
     tiles = (
         db.query(BingoTiles)
         .filter(BingoTiles.bingo_id == board.id)
@@ -250,12 +246,10 @@ def get_user_board(code: str, user_id: int, db: Session = Depends(get_db)):
         points=board.points,
         tiles=[
             TileResponse(
-                id=tile.id,
-                row=tile.row,
-                col=tile.col,
-                bingo_char=tile.bingo_char
-            ) for tile in tiles
-        ]
+                id=tile.id, row=tile.row, col=tile.col, bingo_char=tile.bingo_char
+            )
+            for tile in tiles
+        ],
     )
 
 

@@ -1,7 +1,7 @@
 from app.db.models import User
 from app.db.db import get_db
 from app.models.auth import UserDetails, EmailLoginRequest, EmailVerify
-from fastapi import FastAPI, HTTPException, Depends, Request, Response, responses
+from fastapi import APIRouter, HTTPException, Depends, Request, Response, responses
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from email.message import EmailMessage
@@ -29,7 +29,7 @@ google_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
 frontend_url = os.environ.get("FRONTEND_URL")
 
 dotenv.load_dotenv()
-auth_app = FastAPI()
+router = APIRouter()
 oauth = OAuth()
 oauth.register(
     name="google",
@@ -37,9 +37,6 @@ oauth.register(
     client_secret=google_client_secret,
     server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
     client_kwargs={"scope": "openid email profile"},
-)
-auth_app.add_middleware(
-    SessionMiddleware, same_site="lax", secret_key=os.getenv("JWT_SECRET")
 )
 
 otps = {}  # For storing otp while logging in
@@ -72,7 +69,7 @@ def send_mail(to_email, otp):
         return 0
 
 
-@auth_app.post("/login/email")
+@router.post("/login/email")
 def login_email(payload: EmailLoginRequest, db: Session = Depends(get_db)):
     email = payload.email
     query = select(User).where(User.email == email)
@@ -82,13 +79,13 @@ def login_email(payload: EmailLoginRequest, db: Session = Depends(get_db)):
         username = email[:index]
         code = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
-        user = User( 
+        user = User(
             username=username,
             name=username,
             email=email,
-            code=code, 
+            code=code,
         )
-        
+
         db.add(user)
         db.commit()
         db.refresh(user)
@@ -100,14 +97,14 @@ def login_email(payload: EmailLoginRequest, db: Session = Depends(get_db)):
     return {"Sucess": "Sent the verification mail"}
 
 
-@auth_app.post("/login/verify-otp", response_model=UserDetails)
+@router.post("/login/verify-otp", response_model=UserDetails)
 def verify_otp(
     payload: EmailVerify, response: Response, db: Session = Depends(get_db)
 ) -> UserDetails:
     email = payload.email
     otp = payload.otp
     actual_otp = otps[email]["otp_code"]
-    if datetime.now() > otp[email]["exp"]:
+    if datetime.now() > otps[email]["exp"]:
         raise HTTPException(detail="OTP Expired", status_code=403)
     if otp != actual_otp:
         raise HTTPException(detail="Incorrect OTP", status_code=401)
@@ -121,16 +118,14 @@ def verify_otp(
     return user
 
 
-@auth_app.get("/login/oauth")
+@router.get("/login/oauth")
 async def redirect_to_google(request: Request):
     redirect = request.url_for("oauth_callback")
     return await oauth.google.authorize_redirect(request, redirect)
 
 
-@auth_app.get("/login/callback", name="oauth_callback")
-async def callback(
-    request: Request, db: Session = Depends(get_db)
-) -> UserDetails:
+@router.get("/login/callback", name="oauth_callback")
+async def callback(request: Request, db: Session = Depends(get_db)) -> UserDetails:
     token = await oauth.google.authorize_access_token(request)
     userinfo = token["userinfo"]
     query = select(User).where(User.email == token["userinfo"]["email"])
@@ -142,7 +137,7 @@ async def callback(
             name=userinfo["name"],
             email=userinfo["email"],
             code=code,
-            profile_image=userinfo.get("picture")
+            profile_image=userinfo.get("picture"),
         )
         db.add(user)
         db.commit()

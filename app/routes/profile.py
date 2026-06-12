@@ -47,7 +47,7 @@ def upload_profile_image(
     return UploadImageResponse(
         message="Profile image uploaded successfully",
         user_id=user.id,
-        profile_image=user.profile_image
+        profile_image=user.profile_image,
     )
 
 
@@ -65,7 +65,7 @@ def get_user_profile(user_id: int, db: Session = Depends(get_db)):
         username=user.username,
         name=user.name,
         email=user.email,
-        profile_image=image
+        profile_image=image,
     )
 
 
