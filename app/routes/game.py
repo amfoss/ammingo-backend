@@ -258,3 +258,36 @@ def get_user_board(code: str, user_id: int, db: Session = Depends(get_db)):
         ]
     )
 
+
+def calculate_points(db: Session, board: Bingo, game: Game):
+    size = game.board_size
+    tiles = db.query(BingoTiles).filter(BingoTiles.bingo_id == board.id).all()
+
+
+    marked_tiles = [t for t in tiles if t.image_url is not None]
+    total = len(marked_tiles) * 100
+
+
+    for row in range(size):
+        row_tiles = [t for t in tiles if t.row == row]
+        if all(t.image_url is not None for t in row_tiles):
+            total += 500
+
+    
+    for col in range(size):
+        col_tiles = [t for t in tiles if t.col == col]
+        if all(t.image_url is not None for t in col_tiles):
+            total += 500
+
+
+    main_diagonal = [t for t in tiles if t.row == t.col]
+    if all(t.image_url is not None for t in main_diagonal):
+        total += 500
+
+    
+    anti_diagonal = [t for t in tiles if t.row + t.col == size - 1]
+    if all(t.image_url is not None for t in anti_diagonal):
+        total += 500
+
+    board.points = total
+    db.commit()
