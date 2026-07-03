@@ -144,9 +144,7 @@ async def callback(request: Request, db: Session = Depends(get_db)) -> UserDetai
         db.refresh(user)
 
     access_token = generate_access_token(user_id=user.id)
-    response = responses.RedirectResponse(url=frontend_url, status_code=302)
-    response.set_cookie(
-        key="access_token", value=access_token, httponly=True, secure=True
+    response = responses.RedirectResponse(
+        url=f"amingo://auth-callback?token={access_token}", status_code=302
     )
-
     return response
