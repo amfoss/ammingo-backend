@@ -390,6 +390,15 @@ def tile_submit(
     if not bingo:
         raise HTTPException(status_code=404, detail="Bingo board not found")
 
+    friend_in_game = (
+        db.query(Bingo)
+        .filter(Bingo.game_id == bingo.game_id, Bingo.user_id == friend.id)
+        .first()
+    )
+    if not friend_in_game:
+        raise HTTPException(status_code=400, detail="Friend is not part of this game")
+    
+
     tile = (
         db.query(BingoTiles)
         .filter(
