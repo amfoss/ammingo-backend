@@ -369,18 +369,12 @@ def tile_submit(
     fact: str = Form(...),
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
-):
-    print(f"[TILE SUBMIT] Received request: bingo_id={bingo_id}, row={row}, col={col}, friend_name='{friend_name}', friend_code='{friend_code}'")
+): # you can submit same guy multiple times
     friend = (
         db.query(User)
         .filter(User.code == friend_code.strip().upper())
         .first()
     )
-    if friend:
-        print(f"[TILE SUBMIT] Found friend in DB: id={friend.id}, name='{friend.name}', username='{friend.username}', code='{friend.code}'")
-    else:
-        print(f"[TILE SUBMIT] Friend with code '{friend_code}' NOT found in DB")
-
     if not friend or (
         friend.name.strip().lower() != friend_name.strip().lower()
         and friend.username.strip().lower() != friend_name.strip().lower()
@@ -395,8 +389,18 @@ def tile_submit(
         .filter(Bingo.game_id == bingo.game_id, Bingo.user_id == friend.id)
         .first()
     )
+    friend_already_submitted = (
+        db.query(BingoTiles)
+        .filter(
+            BingoTiles.friend_id == friend.id, 
+            BingoTiles.bingo_id == bingo.id
+        )
+    )
+
     if not friend_in_game:
         raise HTTPException(status_code=400, detail="Friend is not part of this game")
+    if friend_already_submitted:
+        raise HTTPException(status_code=400, detail="Friend has already been submitted")
     
 
     tile = (
