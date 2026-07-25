@@ -1,10 +1,8 @@
-from fastapi import Request, status, Depends, HTTPException
+from fastapi import Request, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from starlette.middleware.base import BaseHTTPMiddleware
 from jose import jwt
-from starlette.middleware.base import BaseHTTPMiddleware
 import os
 from datetime import datetime, timezone
 from app.routes.auth import generate_access_token
@@ -31,22 +29,24 @@ async def verify_token(request, call_next):
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header.split(" ")[1]
-            
-    if not token:
         return JSONResponse(status_code=403, content={"error": "Unauthorized"})
     
     db = None
     try:
-        payload = jwt.decode(token, secret, algorithms=[algorithm])
+        try:
+            payload = jwt.decode(token, secret, algorithms=[algorithm])
+            expired = False
+        except jwt.ExpiredSignatureError:
+            payload = jwt.decode(token, secret, algorithms=[algorithm], options={"verify_exp": False})
+            expired = True
         user_id = payload["user_id"]
-        exp = payload["exp"]
         query = select(User).where(User.id == user_id)
         db = SessionLocal()
         request.state.db = db
         user = db.execute(query).scalars().first()
         if not user:
             return JSONResponse(status_code=403, content={"error": "Unauthorized"})
-        if exp < datetime.now(timezone.utc).timestamp():
+        if expired:
             token = generate_access_token(user_id)
         response = await call_next(request)
         response.set_cookie(key="access_token", value=token, httponly=True, secure=True)
