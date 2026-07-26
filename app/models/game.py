@@ -16,6 +16,7 @@ class StartGameRequest(BaseModel):
 class JoinGameRequest(BaseModel):
     pass
 
+
 class CreateGameResponse(BaseModel):
     game_id: int
     join_code: str
@@ -65,14 +66,17 @@ class BingoBoardResponse(BaseModel):
     points: int
     tiles: list[TileResponse]
 
+
 class LeaderboardEntry(BaseModel):
     code: str
     name: str
     points: int
     username: str
 
+
 class LeaderboardResponse(BaseModel):
     leaderboard: list[LeaderboardEntry]
+
 
 class TileSubmit(BaseModel):
     id: int
@@ -82,6 +86,7 @@ class TileSubmit(BaseModel):
     bingo_id: int
     image_url: str | None = None
     random_fact: str | None = None
+
 
 class GameStatusResponse(BaseModel):
     tiles_done: int

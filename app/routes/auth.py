@@ -91,10 +91,14 @@ def login_email(payload: EmailLoginRequest, db: Session = Depends(get_db)):
         db.refresh(user)
     otp_code = "".join(random.choices(string.digits, k=6))
     otps[email] = {"exp": datetime.now() + timedelta(minutes=5), "otp_code": otp_code}
-    print(f"\n========================================\n[DEBUG] OTP for {email} is: {otp_code}\n========================================\n")
+    print(
+        f"\n========================================\n[DEBUG] OTP for {email} is: {otp_code}\n========================================\n"
+    )
     sent = send_mail(to_email=email, otp=otp_code)
     if not sent:
-        print(f"[WARNING] Failed to send verification email to {email}. Bypassing error for local testing/dev.")
+        print(
+            f"[WARNING] Failed to send verification email to {email}. Bypassing error for local testing/dev."
+        )
     return {"Sucess": "Sent the verification mail"}
 
 
