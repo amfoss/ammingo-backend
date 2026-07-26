@@ -1,0 +1,16 @@
+name: Push to production
+on:
+  pull_request_target:
+    branches:
+      - prod
+jobs:
+  build: 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          password: ${{ secrets.DEPLOY_PASSWORD }}
+          script: /opt/deploy/deploy.sh
