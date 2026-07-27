@@ -30,14 +30,16 @@ async def verify_token(request, call_next):
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header.split(" ")[1]
         return JSONResponse(status_code=403, content={"error": "Unauthorized"})
-    
+
     db = None
     try:
         try:
             payload = jwt.decode(token, secret, algorithms=[algorithm])
             expired = False
         except jwt.ExpiredSignatureError:
-            payload = jwt.decode(token, secret, algorithms=[algorithm], options={"verify_exp": False})
+            payload = jwt.decode(
+                token, secret, algorithms=[algorithm], options={"verify_exp": False}
+            )
             expired = True
         user_id = payload["user_id"]
         query = select(User).where(User.id == user_id)
@@ -52,32 +54,35 @@ async def verify_token(request, call_next):
         response.set_cookie(key="access_token", value=token, httponly=True, secure=True)
         return response
     except Exception as e:
-        return JSONResponse(status_code=403, content={"error": f"Unauthorized: {str(e)}"})
+        return JSONResponse(
+            status_code=403, content={"error": f"Unauthorized: {str(e)}"}
+        )
     finally:
         if db is not None:
             db.close()
-    
+
+
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     token = request.cookies.get("access_token")
     if not token:
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header.split(" ")[1]
-            
+
     if not token:
         raise HTTPException(status_code=401, detail="Not logged in")
-    
+
     try:
         payload = jwt.decode(token, secret, algorithms=[algorithm])
         user_id = payload.get("user_id")
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
-    
+
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token")
-    
+
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
-    
+
     return user

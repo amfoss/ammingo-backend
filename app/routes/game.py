@@ -62,7 +62,11 @@ def generate_qr_base64(code: str):
 
 
 @router.post("/games", response_model=CreateGameResponse)
-def create_game(data: CreateGameRequest, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+def create_game(
+    data: CreateGameRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
 
     code = create_unique_code(db)
     qr_img = generate_qr_base64(code)
@@ -91,23 +95,24 @@ def create_game(data: CreateGameRequest, db: Session = Depends(get_db), current_
 
 
 @router.post("/games/join/{code}", response_model=JoinGameResponse)
-def join_game(code: str,
-      db: Session = Depends(get_db), 
-      current_user = Depends(get_current_user)
-    ):
+def join_game(
+    code: str, db: Session = Depends(get_db), current_user=Depends(get_current_user)
+):
 
     game = db.query(Game).filter(Game.code == code).first()
 
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    existing = db.query(Bingo).filter_by(game_id=game.id, user_id=current_user.id).first()
+    existing = (
+        db.query(Bingo).filter_by(game_id=game.id, user_id=current_user.id).first()
+    )
 
     if existing:
         return {
             "message": "User already joined",
             "game_id": game.id,
-            "username": current_user.username
+            "username": current_user.username,
         }
 
     if game.board_size is not None:
@@ -160,10 +165,12 @@ def get_lobby(code: str, db: Session = Depends(get_db)):
 
 
 @router.post("/games/{code}/start", response_model=StartGameResponse)
-def start_game(code: str, data: StartGameRequest, 
-               db: Session = Depends(get_db), 
-               current_user: User = Depends(get_current_user)
-    ):
+def start_game(
+    code: str,
+    data: StartGameRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
 
     game = db.query(Game).filter(Game.code == code).first()
 
@@ -191,7 +198,7 @@ def start_game(code: str, data: StartGameRequest,
     if data.size not in allowed:
         raise HTTPException(
             status_code=400,
-            detail=f"Board size {data.size}x{data.size} is not allowed for {total_players} players. Allowed: {allowed}"
+            detail=f"Board size {data.size}x{data.size} is not allowed for {total_players} players. Allowed: {allowed}",
         )
 
     game.board_size = data.size
@@ -224,7 +231,8 @@ def create_bingo_matrix(db: Session, game: Game, user_id: int):
 
     if not other_players:
         raise HTTPException(
-            status_code=400, detail="Not enough players to start the game. You need at least 2 players."
+            status_code=400,
+            detail="Not enough players to start the game. You need at least 2 players.",
         )
 
     if len(other_players) >= total_tiles:
@@ -235,8 +243,10 @@ def create_bingo_matrix(db: Session, game: Game, user_id: int):
         selected_players = random.choices(other_players, k=total_tiles)
 
     # Collect start characters from selected players
-    unique_start_letters = {p.name.strip()[0].upper() for p in selected_players if p.name.strip()}
-    
+    unique_start_letters = {
+        p.name.strip()[0].upper() for p in selected_players if p.name.strip()
+    }
+
     # If starting letters diversity is low (less than 3 unique letters),
     # generate random letters from the alphabet A-Z to populate the board tiles.
     if len(unique_start_letters) < 3:
@@ -256,7 +266,11 @@ def create_bingo_matrix(db: Session, game: Game, user_id: int):
 
 
 @router.get("/games/{code}", response_model=GameDetailResponse)
-def get_game_details(code: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_game_details(
+    code: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     game = db.query(Game).filter(Game.code == code).first()
 
     if not game:
@@ -281,7 +295,11 @@ def get_game_details(code: str, db: Session = Depends(get_db), current_user: Use
 
 
 @router.get("/games/{code}/board/", response_model=BingoBoardResponse)
-def get_user_board(code: str,current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_user_board(
+    code: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
 
     game = db.query(Game).filter(Game.code == code).first()
     if not game:
@@ -305,11 +323,16 @@ def get_user_board(code: str,current_user: User = Depends(get_current_user), db:
         points=board.points,
         tiles=[
             TileResponse(
-                id=tile.id, row=tile.row, col=tile.col, bingo_char=tile.bingo_char, image_url=tile.image_url
+                id=tile.id,
+                row=tile.row,
+                col=tile.col,
+                bingo_char=tile.bingo_char,
+                image_url=tile.image_url,
             )
             for tile in tiles
         ],
     )
+
 
 @router.get("/games/{code}/leaderboard", response_model=LeaderboardResponse)
 def get_leaderboard(code: str, db: Session = Depends(get_db)):
@@ -326,11 +349,12 @@ def get_leaderboard(code: str, db: Session = Depends(get_db)):
     )
 
     leaderboard = [
-        LeaderboardEntry(code=r.code,name=r.name, username=r.username, points=r.points)
+        LeaderboardEntry(code=r.code, name=r.name, username=r.username, points=r.points)
         for r in results
     ]
 
     return LeaderboardResponse(leaderboard=leaderboard)
+
 
 @router.get("/games/{code}/status", response_model=GameStatusResponse)
 def get_game_status(code: str, db: Session = Depends(get_db)):
@@ -345,19 +369,21 @@ def get_game_status(code: str, db: Session = Depends(get_db)):
     # Calculate tiles_done (tiles where image_url is set)
     tiles_done = 0
     if board_ids:
-        tiles_done = db.query(BingoTiles).filter(
-            BingoTiles.bingo_id.in_(board_ids),
-            BingoTiles.image_url.isnot(None)
-        ).count()
+        tiles_done = (
+            db.query(BingoTiles)
+            .filter(
+                BingoTiles.bingo_id.in_(board_ids), BingoTiles.image_url.isnot(None)
+            )
+            .count()
+        )
 
     active_players = len(boards)
     max_cap = 100
 
     return GameStatusResponse(
-        tiles_done=tiles_done,
-        active_players=active_players,
-        max_cap=max_cap
+        tiles_done=tiles_done, active_players=active_players, max_cap=max_cap
     )
+
 
 @router.post("/games/tile-submit", response_model=TileSubmit)
 def tile_submit(
@@ -369,12 +395,8 @@ def tile_submit(
     fact: str = Form(...),
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
-): # you can submit same guy multiple times
-    friend = (
-        db.query(User)
-        .filter(User.code == friend_code.strip().upper())
-        .first()
-    )
+):  # you can submit same guy multiple times
+    friend = db.query(User).filter(User.code == friend_code.strip().upper()).first()
     if not friend or (
         friend.name.strip().lower() != friend_name.strip().lower()
         and friend.username.strip().lower() != friend_name.strip().lower()
@@ -389,19 +411,14 @@ def tile_submit(
         .filter(Bingo.game_id == bingo.game_id, Bingo.user_id == friend.id)
         .first()
     )
-    friend_already_submitted = (
-        db.query(BingoTiles)
-        .filter(
-            BingoTiles.friend_id == friend.id, 
-            BingoTiles.bingo_id == bingo.id
-        )
+    friend_already_submitted = db.query(BingoTiles).filter(
+        BingoTiles.friend_id == friend.id, BingoTiles.bingo_id == bingo.id
     )
 
     if not friend_in_game:
         raise HTTPException(status_code=400, detail="Friend is not part of this game")
     if friend_already_submitted:
         raise HTTPException(status_code=400, detail="Friend has already been submitted")
-    
 
     tile = (
         db.query(BingoTiles)
@@ -418,7 +435,9 @@ def tile_submit(
         raise HTTPException(status_code=400, detail="Tile already submitted")
 
     if friend.name.strip()[0].upper() != tile.bingo_char:
-        raise HTTPException(status_code=400, detail=f"Friend's name must start with {tile.bingo_char}")
+        raise HTTPException(
+            status_code=400, detail=f"Friend's name must start with {tile.bingo_char}"
+        )
 
     ext = os.path.splitext(image.filename)[-1]
     filename = f"{uuid.uuid4().hex}{ext}"

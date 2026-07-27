@@ -13,7 +13,7 @@ class UserProfileResponse(BaseModel):
     profile_image: str
     code: str
 
+
 class UpdateUserRequest(BaseModel):
     username: str | None = None
     name: str | None = None
-

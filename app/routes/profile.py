@@ -6,7 +6,11 @@ import os
 
 from app.db.db import get_db
 from app.db.models import User
-from app.models.profile import UploadImageResponse, UserProfileResponse, UpdateUserRequest
+from app.models.profile import (
+    UploadImageResponse,
+    UserProfileResponse,
+    UpdateUserRequest,
+)
 from app.middlewares.verify_token import get_current_user
 
 router = APIRouter()
@@ -23,7 +27,7 @@ def upload_profile_image(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    
+
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(status_code=400, detail="Only JPEG, PNG and WEBP allowed")
 
@@ -45,12 +49,16 @@ def upload_profile_image(
     return UploadImageResponse(
         message="Profile image uploaded successfully",
         user_id=current_user.id,
-        profile_image=current_user.profile_image
+        profile_image=current_user.profile_image,
     )
 
 
 @router.get("/profile/{user_id}", response_model=UserProfileResponse)
-def get_user_profile(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_user_profile(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     user = db.query(User).filter(User.id == current_user.id).first()
 
     if not user:
@@ -73,18 +81,19 @@ def update_user_profile(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    
+
     if data.username is not None:
-        existing = db.query(User).filter(
-            User.username == data.username,
-            User.id != current_user.id  
-        ).first()
+        existing = (
+            db.query(User)
+            .filter(User.username == data.username, User.id != current_user.id)
+            .first()
+        )
         if existing:
             raise HTTPException(status_code=400, detail="Username already taken")
-        current_user.username = data.username  
+        current_user.username = data.username
 
     if data.name is not None:
-        current_user.name = data.name  
+        current_user.name = data.name
 
     db.commit()
     db.refresh(current_user)
@@ -94,9 +103,10 @@ def update_user_profile(
         username=current_user.username,
         name=current_user.name,
         email=current_user.email,
-        profile_image=current_user.profile_image if current_user.profile_image else "/uploads/default.png",
+        profile_image=(
+            current_user.profile_image
+            if current_user.profile_image
+            else "/uploads/default.png"
+        ),
         code=current_user.code,
     )
-
-
-
