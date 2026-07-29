@@ -1,10 +1,13 @@
-name: Push to production
 on:
   pull_request_target:
+    types:
+      - closed
     branches:
       - prod
+
 jobs:
-  build: 
+  build:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH
