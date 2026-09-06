@@ -187,12 +187,10 @@ def start_game(
     total_players = len(participants)
 
     if total_players > 25:
-        allowed = [5]
+        allowed = [3,4,5]
     elif total_players > 16:
-        allowed = [4, 5]
-    elif total_players > 9:
         allowed = [3, 4]
-    else:
+    elif total_players > 9:
         allowed = [3]
 
     if data.size not in allowed:
