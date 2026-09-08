@@ -15,9 +15,7 @@ import smtplib
 from starlette.middleware.sessions import SessionMiddleware
 from datetime import datetime, timezone, timedelta
 
-secret = os.environ.get(
-    "JWT_SECRET"
-)
+secret = os.environ.get("JWT_SECRET")
 algorithm = os.environ.get("HASH_ALGORITHM", default="HS256")
 expiry_time = int(os.environ.get("TOKEN_EXPIRY_TIME", default="1"))
 email_addr = os.environ.get("EMAIL_ADDRESS")
