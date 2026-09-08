@@ -186,11 +186,19 @@ def start_game(
     participants = db.query(Bingo).filter(Bingo.game_id == game.id).all()
     total_players = len(participants)
 
+    if total_players < 2:
+        raise HTTPException(
+            status_code=400,
+            detail="You need at least 2 players to start the game.",
+        )
+
     if total_players > 25:
-        allowed = [3,4,5]
+        allowed = [5]
     elif total_players > 16:
-        allowed = [3, 4]
+        allowed = [4, 5]
     elif total_players > 9:
+        allowed = [3, 4]
+    else:
         allowed = [3]
 
     if data.size not in allowed:
