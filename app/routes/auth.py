@@ -66,7 +66,8 @@ def send_mail(to_email, otp):
             smtp.send_message(msg)
             smtp.quit()
             return 1
-    except Exception:
+    except Exception as e:
+        print(f"[ERROR] Detailed SMTP Exception: {e}")
         return 0
 
 
