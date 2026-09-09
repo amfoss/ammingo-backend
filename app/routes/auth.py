@@ -9,11 +9,7 @@ from jose import jwt
 import os
 from authlib.integrations.starlette_client import OAuth
 import dotenv
-import random
-import string
-import smtplib
-from starlette.middleware.sessions import SessionMiddleware
-from datetime import datetime, timezone, timedelta
+dotenv.load_dotenv()
 
 secret = os.environ.get("JWT_SECRET")
 algorithm = os.environ.get("HASH_ALGORITHM", default="HS256")
@@ -26,7 +22,6 @@ google_client_id = os.environ.get("GOOGLE_CLIENT_ID")
 google_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
 frontend_url = os.environ.get("FRONTEND_URL")
 
-dotenv.load_dotenv()
 router = APIRouter()
 oauth = OAuth()
 oauth.register(
