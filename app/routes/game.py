@@ -417,8 +417,12 @@ def tile_submit(
         .filter(Bingo.game_id == bingo.game_id, Bingo.user_id == friend.id)
         .first()
     )
-    friend_already_submitted = db.query(BingoTiles).filter(
-        BingoTiles.friend_id == friend.id, BingoTiles.bingo_id == bingo.id
+    friend_already_submitted = (
+        db.query(BingoTiles)
+        .filter(
+            BingoTiles.friend_id == friend.id, BingoTiles.bingo_id == bingo.id
+        )
+        .first()
     )
 
     if not friend_in_game:
@@ -454,6 +458,7 @@ def tile_submit(
 
     tile.image_url = filepath
     tile.random_fact = fact
+    tile.friend_id = friend.id
     db.commit()
     db.refresh(tile)
 
