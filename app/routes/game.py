@@ -419,9 +419,7 @@ def tile_submit(
     )
     friend_already_submitted = (
         db.query(BingoTiles)
-        .filter(
-            BingoTiles.friend_id == friend.id, BingoTiles.bingo_id == bingo.id
-        )
+        .filter(BingoTiles.friend_id == friend.id, BingoTiles.bingo_id == bingo.id)
         .first()
     )
 
