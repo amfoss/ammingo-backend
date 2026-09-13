@@ -1,4 +1,5 @@
 import dotenv
+
 dotenv.load_dotenv()
 
 from app.db.models import User
